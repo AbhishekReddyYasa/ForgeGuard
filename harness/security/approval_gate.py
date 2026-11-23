@@ -2,7 +2,7 @@ from typing import Any
 
 
 class ApprovalGate:
-    """Control whether a proposed recovery action has human approval."""
+    """Control approval for actions that modify project files."""
 
     APPROVAL_STATUSES = {
         "approved",
@@ -15,7 +15,7 @@ class ApprovalGate:
         recovery_plan: dict[str, Any],
         decision: str,
     ) -> dict[str, Any]:
-        """Record an explicit approval or rejection for a recovery plan."""
+        """Record an explicit approval or rejection."""
 
         if not isinstance(recovery_plan, dict):
             raise TypeError("Recovery plan must be a dictionary.")
@@ -41,13 +41,16 @@ class ApprovalGate:
         return updated_plan
 
     def can_execute(self, recovery_plan: dict[str, Any]) -> bool:
-        """Check whether a recovery plan has explicit human approval."""
+        """Allow read-only actions directly and require approval for modifications."""
 
         if not isinstance(recovery_plan, dict):
             return False
 
+        if recovery_plan.get("requires_approval") is False:
+            return recovery_plan.get("status") == "ready"
+
         return (
-            recovery_plan.get("approval_status") == "approved"
+            recovery_plan.get("requires_approval") is True
+            and recovery_plan.get("approval_status") == "approved"
             and recovery_plan.get("status") == "approved"
-            and recovery_plan.get("requires_approval") is True
         )

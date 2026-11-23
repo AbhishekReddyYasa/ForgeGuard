@@ -8,27 +8,38 @@ def planner():
 
 
 @pytest.mark.parametrize(
-    ("category", "expected_action"),
+    ("category", "expected_action", "requires_approval"),
     [
-        ("test_failure", "inspect_test_failure"),
-        ("lint_failure", "review_lint_violations"),
-        ("format_failure", "run_code_formatter"),
-        ("timeout", "review_timeout"),
-        ("execution_error", "inspect_execution_environment"),
-        ("unknown_failure", "manual_investigation"),
+        ("test_failure", "run_python_tests", False),
+        ("lint_failure", "run_ruff_lint", False),
+        ("format_failure", "format_python_file", True),
+        ("timeout", "manual_investigation", True),
+        ("execution_error", "manual_investigation", True),
+        ("unknown_failure", "manual_investigation", True),
     ],
 )
-def test_creates_correct_recovery_plan(planner, category, expected_action):
-    diagnosis = {"category": category}
-
-    plan = planner.create_plan(diagnosis)
+def test_creates_correct_recovery_plan(
+    planner,
+    category,
+    expected_action,
+    requires_approval,
+):
+    plan = planner.create_plan({"category": category})
 
     assert plan["failure_category"] == category
     assert plan["action_id"] == expected_action
+    assert plan["requires_approval"] is requires_approval
 
 
-def test_recovery_plan_requires_human_approval(planner):
+def test_read_only_recovery_is_ready(planner):
     plan = planner.create_plan({"category": "test_failure"})
+
+    assert plan["requires_approval"] is False
+    assert plan["status"] == "ready"
+
+
+def test_modifying_recovery_awaits_approval(planner):
+    plan = planner.create_plan({"category": "format_failure"})
 
     assert plan["requires_approval"] is True
     assert plan["status"] == "awaiting_approval"
@@ -44,7 +55,7 @@ def test_unknown_category_uses_manual_investigation(planner):
 def test_recovery_plan_contains_risk_level(planner):
     plan = planner.create_plan({"category": "lint_failure"})
 
-    assert plan["risk_level"] == "medium"
+    assert plan["risk_level"] == "low"
 
 
 def test_rejects_non_dictionary_diagnosis(planner):
