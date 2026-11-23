@@ -1,420 +1,228 @@
-\# ForgeGuard 🛡️
+# ForgeGuard 🛡️
 
+**A Python-based agent harness for identifying software failures and handling recovery in a controlled way.**
 
+Software development doesn't always go smoothly. Tests fail, code formatting gets messed up, and sometimes tracking down a small issue takes longer than actually fixing it.
 
-\*\*A Python-based agent harness for diagnosing software failures and managing controlled recovery.\*\*
+I started building ForgeGuard to explore how an agent-based system could make this process easier. The goal was to create something that could identify common software issues, figure out what might have caused them, suggest a suitable fix, and carry out the required action with the right permissions.
 
+An important part of the project is control. Instead of allowing an agent to execute any command it wants, ForgeGuard uses predefined actions and approval checks to keep recovery operations restricted and traceable.
 
+## What does ForgeGuard do?
 
-Software projects don't always behave as expected. Tests fail, formatting gets inconsistent, and figuring out what went wrong can take more time than fixing the actual problem.
+- **Failure detection:** Identifies common development issues, including failed tests, linting errors, formatting problems, and execution timeouts.
+- **Recovery planning:** Suggests an appropriate action based on the type of failure detected.
+- **Permission checks:** Allows safe, read-only operations while requiring approval for actions that modify files.
+- **Controlled execution:** Executes only registered actions rather than accepting arbitrary commands.
+- **Execution history:** Keeps track of executed actions, their results, execution time, and output.
+- **Verification:** Uses tools like Pytest and Ruff to check whether the project is working as expected.
 
+## How does it work?
 
+ForgeGuard follows a simple sequence, with each component handling a specific part of the recovery process.
 
-I built ForgeGuard to explore how an agent-based system could help with this process. The idea is simple: detect a failure, understand its category, suggest an appropriate recovery action, check whether that action is allowed, and execute it in a controlled way.
+1. A software failure is reported to the system.
+2. The failure diagnoser analyses the error and identifies its category.
+3. The recovery planner decides what action should be taken.
+4. The approval gate checks whether the proposed action is permitted.
+5. The controlled executor runs the approved action.
+6. The result is recorded in the execution log.
+7. The execution history can be reviewed later.
 
-
-
-The project focuses on making that workflow traceable, testable, and safer rather than allowing an agent to run arbitrary commands.
-
-
-
-\## What can it do?
-
-
-
-\- \*\*Detect failures:\*\* Recognises common issues such as failed tests, lint errors, formatting problems, and execution timeouts.
-
-\- \*\*Suggest recovery actions:\*\* Creates a recovery plan based on the detected problem.
-
-\- \*\*Check permissions:\*\* Allows read-only actions to proceed while requiring approval for file-modifying actions.
-
-\- \*\*Execute controlled actions:\*\* Runs operations from a predefined list instead of accepting arbitrary commands.
-
-\- \*\*Keep an execution history:\*\* Records what ran, whether it succeeded, how long it took, and its output.
-
-\- \*\*Run verification checks:\*\* Uses pytest and Ruff to check the project's health.
-
-
-
-\## How it works
-
-
-
-ForgeGuard follows a straightforward workflow:
-
-
-
-1\. A software failure is provided to the system.
-
-2\. The failure diagnoser identifies the likely issue.
-
-3\. The recovery planner creates a proposed action.
-
-4\. The approval gate checks whether the action can proceed.
-
-5\. The controlled executor runs the permitted operation.
-
-6\. The result is saved in the execution log.
-
-7\. Execution history can be reviewed to understand previous runs.
-
-
+### Workflow
 
 ```text
-
-&#x20;      Software Failure
-
-&#x20;             |
-
-&#x20;             v
-
-&#x20;      Failure Diagnoser
-
-&#x20;             |
-
-&#x20;             v
-
-&#x20;       Recovery Planner
-
-&#x20;             |
-
-&#x20;             v
-
-&#x20;        Approval Gate
-
-&#x20;             |
-
-&#x20;             v
-
-&#x20;     Controlled Executor
-
-&#x20;             |
-
-&#x20;             v
-
-&#x20;      Verification Checks
-
-&#x20;             |
-
-&#x20;             v
-
-&#x20;      Execution Logger
-
-&#x20;             |
-
-&#x20;             v
-
-&#x20;      Execution History
-
+       Software Failure
+              |
+              v
+       Failure Diagnoser
+              |
+              v
+        Recovery Planner
+              |
+              v
+         Approval Gate
+              |
+              v
+      Controlled Executor
+              |
+              v
+       Verification Checks
+              |
+              v
+       Execution Logger
+              |
+              v
+       Execution History
 ```
 
+## Available recovery actions
 
+At the moment, ForgeGuard supports three predefined recovery actions.
 
-\## Available recovery actions
-
-
-
-The executor currently supports three predefined actions:
-
-
-
-| Action | What it does | Approval |
-
+| Action | Description | Approval |
 |---|---|---|
+| `run_python_tests` | Runs the project's test suite | Not required |
+| `run_ruff_lint` | Checks the code for linting issues | Not required |
+| `format_python_file` | Formats a selected Python file | Required |
 
-| `run\_python\_tests` | Runs the project's test suite | Not required |
+These actions are maintained in an action registry. This means the executor can only run operations that have been explicitly registered. If an unknown action is requested, it gets rejected.
 
-| `run\_ruff\_lint` | Checks the code for linting issues | Not required |
+## Technologies used
 
-| `format\_python\_file` | Formats a selected Python file | Required |
+- Python 3.13
+- Pytest for testing
+- Ruff for linting and formatting
+- SQLAlchemy
+- Pydantic
+- PyYAML
+- Git for version control
 
+## Getting started
 
+To run ForgeGuard locally, you'll need Python 3.13 or later and Git installed.
 
-The action registry controls which operations are available. Unknown actions are rejected.
-
-
-
-\## Built with
-
-
-
-\- Python 3.13
-
-\- Pytest for testing
-
-\- Ruff for linting and formatting
-
-\- SQLAlchemy, Pydantic and PyYAML
-
-\- Git for version control
-
-
-
-\## Getting started
-
-
-
-You'll need Python 3.13 or later and Git installed.
-
-
-
-\*\*1. Clone the repository\*\*
-
-
+**1. Clone the repository**
 
 ```cmd
-
 git clone <repository-url>
-
 cd ForgeGuard
-
 ```
 
-
-
-\*\*2. Create and activate a virtual environment\*\*
-
-
+**2. Create and activate a virtual environment**
 
 ```cmd
-
 python -m venv .venv
-
-.venv\\Scripts\\activate
-
+.venv\Scripts\activate
 ```
 
-
-
-\*\*3. Install the dependencies\*\*
-
-
+**3. Install the required dependencies**
 
 ```cmd
-
 python -m pip install -r requirements.txt
-
 ```
 
+## Running ForgeGuard
 
-
-\## Running the project
-
-
-
-The easiest way to see ForgeGuard in action is to run the demo:
-
-
+If you want to see how everything fits together, start with the demo:
 
 ```cmd
-
 python -m scripts.demo
-
 ```
 
+The demo simulates a test failure and takes it through the recovery workflow. It diagnoses the issue, prepares a recovery plan, checks whether the action is allowed, and then runs the test suite through the controlled executor.
 
+Once the execution is complete, it also displays the result and some execution history statistics.
 
-The demo simulates a test failure, diagnoses it, generates a recovery plan, checks permissions, and then runs the test suite through the controlled executor. It also displays the execution result and history statistics.
+You can also run the individual checks separately.
 
-
-
-You can run the checks individually too:
-
-
-
-\*\*Run tests\*\*
+**Run the tests**
 
 ```cmd
-
 python -m pytest -q
-
 ```
 
-
-
-\*\*Check code quality\*\*
+**Check for linting issues**
 
 ```cmd
-
 python -m ruff check .
-
 ```
 
-
-
-\*\*Check formatting\*\*
+**Check code formatting**
 
 ```cmd
-
 python -m ruff format --check .
-
 ```
 
-
-
-\## Project structure
-
-
+## Project structure
 
 ```text
-
 ForgeGuard/
-
 │
-
 ├── agent/
-
 │   ├── core/
-
-│   │   ├── failure\_diagnoser.py
-
-│   │   ├── diagnosis\_coordinator.py
-
-│   │   ├── recovery\_planner.py
-
-│   │   └── recovery\_coordinator.py
-
+│   │   ├── failure_diagnoser.py
+│   │   ├── diagnosis_coordinator.py
+│   │   ├── recovery_planner.py
+│   │   └── recovery_coordinator.py
 │   ├── tools/
-
 │   └── memory/
-
 │
-
 ├── harness/
-
 │   ├── verification/
-
 │   ├── security/
-
 │   └── observability/
-
 │
-
 ├── tests/
-
 │   ├── unit/
-
 │   └── integration/
-
 │
-
 ├── scripts/
-
 │   └── demo.py
-
 │
-
 ├── docs/
-
 ├── config/
-
 ├── benchmarks/
-
 ├── workspace/
-
 ├── reports/
-
 │
-
 ├── AGENTS.md
-
 ├── requirements.txt
-
 ├── pyproject.toml
-
 └── README.md
-
 ```
 
+## Testing results
 
-
-\## Testing
-
-
-
-The latest full test run during development produced the following results:
-
-
+During development, the latest full test run produced the following results:
 
 | Result | Count |
-
 |---|---:|
-
 | Tests collected | 115 |
-
 | Passed | 114 |
-
 | Failed | 0 |
-
 | Skipped | 1 |
 
+The only skipped test is related to symbolic-link availability in the Windows environment.
 
+## Security and limitations
 
-The skipped test is related to symbolic-link availability in the Windows environment.
+One of the things I wanted to get right while building ForgeGuard was making sure that an agent could use useful tools without having unrestricted access to the system.
 
+To handle this, the current implementation includes:
 
+- A predefined registry of allowed actions.
+- Approval checks before file-modifying operations.
+- Workspace path validation for formatting targets.
+- Execution timeouts to prevent operations from running indefinitely.
+- `shell=False` when launching subprocesses.
+- Execution logs to keep track of what happened.
 
-\## A note about safety
+There are a few limitations worth mentioning.
 
+ForgeGuard currently runs with the permissions of the Windows user executing it. This means the workspace is not an isolated operating-system sandbox. The approval mechanism is also an application-level permission check, not a full authentication or security system.
 
+Another limitation is that failure diagnosis currently uses predefined error patterns. An LLM has not yet been integrated for more flexible, context-aware diagnosis.
 
-One of the main things I wanted to explore with ForgeGuard was how an agent could be given useful tools without giving it unrestricted control over the system.
+These are areas I'd like to improve in future versions.
 
+## Future improvements
 
+There are several things I'd like to work on next:
 
-The current implementation uses:
+- Integrate an LLM to improve failure diagnosis and recovery suggestions.
+- Run recovery operations inside isolated containers.
+- Expand the available recovery actions.
+- Improve how failure detection and recovery effectiveness are evaluated.
+- Build a dashboard to monitor executions and view their results.
+- Add persistent memory so the system can refer to previously encountered failures and solutions.
 
-\- A predefined action registry.
+## Why I built ForgeGuard
 
-\- Approval checks for file-modifying operations.
+I wanted to understand what goes into building an agent system beyond simply connecting an LLM to a set of tools.
 
-\- Workspace path validation for formatting targets.
+While working on ForgeGuard, I got to explore how different components of an agent harness work together, particularly failure diagnosis, recovery planning, tool permissions, controlled execution, verification, and execution tracking.
 
-\- Timeouts for executed operations.
+It also gave me a chance to put these concepts into practice through an actual Python project rather than just studying them individually.
 
-\- `shell=False` when launching subprocesses.
-
-\- Execution logs for traceability.
-
-
-
-There are still limitations. The executor runs with the permissions of the current Windows user, so the workspace is not an operating-system sandbox. The approval mechanism is an application-level check, not a secure authentication system. Failure diagnosis currently relies on predefined error patterns rather than an integrated LLM.
-
-
-
-These are important areas for further development.
-
-
-
-\## What's next?
-
-
-
-Some improvements I'd like to explore:
-
-
-
-\- Connecting an LLM for more context-aware failure diagnosis.
-
-\- Running recovery operations inside isolated containers.
-
-\- Adding more recovery tools.
-
-\- Improving failure detection and recovery evaluation.
-
-\- Building a dashboard to monitor executions.
-
-\- Introducing persistent memory for previous failures and solutions.
-
-
-
-\## Why I built it
-
-
-
-This project gave me an opportunity to understand how agent harnesses work beyond simply connecting an LLM to a few tools. It helped me explore tool permissions, execution control, verification loops, recovery workflows, and observability in a practical software project.
-
-
-
-\*\*ForgeGuard is a prototype and a foundation for experimenting with safer, more reliable software engineering agents.\*\*
-
+**ForgeGuard is still a prototype, but it provides a starting point for exploring how software engineering agents can become more reliable, controlled, and useful.**
