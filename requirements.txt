@@ -1,0 +1,21 @@
+
+# ForgeGuard - Core Dependencies
+
+# LLM integration
+openai
+
+# Configuration and data validation
+pydantic
+python-dotenv
+pyyaml
+
+# Testing and code quality
+pytest
+pytest-cov
+ruff
+
+# Dashboard
+streamlit
+
+# Database
+sqlalchemy
