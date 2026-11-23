@@ -3,11 +3,12 @@ import sys
 import time
 from pathlib import Path
 
+from harness.observability.execution_logger import ExecutionLogger
 from harness.verification.result import VerificationResult
 
 
 class VerificationRunner:
-    """Execute predefined verification profiles inside an assigned workspace."""
+    """Execute predefined verification profiles and record their outcomes."""
 
     PROFILES = {
         "python_tests": ("-m", "pytest", "-q"),
@@ -19,6 +20,7 @@ class VerificationRunner:
         self,
         workspace: Path,
         timeout_seconds: int = 60,
+        logger: ExecutionLogger | None = None,
     ) -> None:
         self.workspace = Path(workspace).resolve()
         self.timeout_seconds = timeout_seconds
@@ -28,6 +30,20 @@ class VerificationRunner:
 
         if timeout_seconds <= 0:
             raise ValueError("Timeout must be greater than zero.")
+
+        self.logger = logger or ExecutionLogger(self.workspace / "reports" / "execution_log.jsonl")
+
+    def _record_result(self, result: VerificationResult) -> VerificationResult:
+        """Record a verification result and return it."""
+
+        self.logger.record(
+            check_name=result.check_name,
+            passed=result.passed,
+            duration_seconds=result.duration_seconds,
+            output=result.output,
+        )
+
+        return result
 
     def run(self, check_name: str) -> VerificationResult:
         """Run one predefined verification profile."""
@@ -51,12 +67,14 @@ class VerificationRunner:
 
             output = "\n".join(part for part in (completed.stdout, completed.stderr) if part)
 
-            return VerificationResult(
+            result = VerificationResult(
                 check_name=check_name,
                 passed=completed.returncode == 0,
                 duration_seconds=time.perf_counter() - start_time,
                 output=output,
             )
+
+            return self._record_result(result)
 
         except subprocess.TimeoutExpired as error:
             output_parts = [
@@ -67,9 +85,11 @@ class VerificationRunner:
 
             output_parts.append(f"Verification timed out after {self.timeout_seconds} seconds.")
 
-            return VerificationResult(
+            result = VerificationResult(
                 check_name=check_name,
                 passed=False,
                 duration_seconds=time.perf_counter() - start_time,
                 output="\n".join(output_parts),
             )
+
+            return self._record_result(result)
