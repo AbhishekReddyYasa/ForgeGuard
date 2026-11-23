@@ -72,3 +72,20 @@ def test_runner_handles_timeout(tmp_path):
 
     assert result.passed is False
     assert "timed out" in result.output.lower()
+
+def test_runner_rejects_unapproved_executable(tmp_path):
+    runner = VerificationRunner(
+        workspace=tmp_path,
+        checks={"unsafe": ["cmd.exe", "/c", "echo unsafe"]},
+    )
+
+    with pytest.raises(ValueError, match="not allowed"):
+        runner.run("unsafe")
+
+
+def test_runner_rejects_empty_command_arguments(tmp_path):
+    with pytest.raises(ValueError, match="Invalid command"):
+        VerificationRunner(
+            workspace=tmp_path,
+            checks={"invalid": ["python", ""]},
+        )

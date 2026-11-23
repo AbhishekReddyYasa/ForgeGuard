@@ -7,7 +7,14 @@ from harness.verification.result import VerificationResult
 
 
 class VerificationRunner:
-    """Execute registered verification checks inside an assigned workspace."""
+    """Execute approved verification checks inside an assigned workspace."""
+
+    ALLOWED_EXECUTABLES = {
+        "python",
+        "python.exe",
+        "ruff",
+        "ruff.exe",
+    }
 
     def __init__(
         self,
@@ -43,6 +50,13 @@ class VerificationRunner:
             raise ValueError(f"Check '{check_name}' is not registered.")
 
         command = self.checks[check_name]
+        executable = Path(command[0]).name.lower()
+
+        if executable not in self.ALLOWED_EXECUTABLES:
+            raise ValueError(
+                f"Executable '{executable}' is not allowed."
+            )
+
         start_time = time.perf_counter()
 
         try:
@@ -73,6 +87,7 @@ class VerificationRunner:
                 for part in (error.stdout, error.stderr)
                 if part
             ]
+
             output_parts.append(
                 f"Verification timed out after {self.timeout_seconds} seconds."
             )
