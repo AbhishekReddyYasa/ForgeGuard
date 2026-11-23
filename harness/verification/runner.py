@@ -1,5 +1,5 @@
-
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -7,23 +7,20 @@ from harness.verification.result import VerificationResult
 
 
 class VerificationRunner:
-    """Execute approved verification checks inside an assigned workspace."""
+    """Execute predefined verification profiles inside an assigned workspace."""
 
-    ALLOWED_EXECUTABLES = {
-        "python",
-        "python.exe",
-        "ruff",
-        "ruff.exe",
+    PROFILES = {
+        "python_tests": ("-m", "pytest", "-q"),
+        "ruff_lint": ("-m", "ruff", "check", "."),
+        "ruff_format_check": ("-m", "ruff", "format", "--check", "."),
     }
 
     def __init__(
         self,
         workspace: Path,
-        checks: dict[str, list[str]],
         timeout_seconds: int = 60,
     ) -> None:
         self.workspace = Path(workspace).resolve()
-        self.checks = checks
         self.timeout_seconds = timeout_seconds
 
         if not self.workspace.exists() or not self.workspace.is_dir():
@@ -32,31 +29,13 @@ class VerificationRunner:
         if timeout_seconds <= 0:
             raise ValueError("Timeout must be greater than zero.")
 
-        for name, command in checks.items():
-            if not name.strip():
-                raise ValueError("Check name cannot be empty.")
-
-            if (
-                not isinstance(command, list)
-                or not command
-                or any(not isinstance(arg, str) or not arg for arg in command)
-            ):
-                raise ValueError(f"Invalid command registered for check: {name}")
-
     def run(self, check_name: str) -> VerificationResult:
-        """Run one registered check and return its verification result."""
+        """Run one predefined verification profile."""
 
-        if check_name not in self.checks:
+        if check_name not in self.PROFILES:
             raise ValueError(f"Check '{check_name}' is not registered.")
 
-        command = self.checks[check_name]
-        executable = Path(command[0]).name.lower()
-
-        if executable not in self.ALLOWED_EXECUTABLES:
-            raise ValueError(
-                f"Executable '{executable}' is not allowed."
-            )
-
+        command = [sys.executable, *self.PROFILES[check_name]]
         start_time = time.perf_counter()
 
         try:
@@ -70,9 +49,7 @@ class VerificationRunner:
                 shell=False,
             )
 
-            output = "\n".join(
-                part for part in (completed.stdout, completed.stderr) if part
-            )
+            output = "\n".join(part for part in (completed.stdout, completed.stderr) if part)
 
             return VerificationResult(
                 check_name=check_name,
@@ -88,9 +65,7 @@ class VerificationRunner:
                 if part
             ]
 
-            output_parts.append(
-                f"Verification timed out after {self.timeout_seconds} seconds."
-            )
+            output_parts.append(f"Verification timed out after {self.timeout_seconds} seconds.")
 
             return VerificationResult(
                 check_name=check_name,

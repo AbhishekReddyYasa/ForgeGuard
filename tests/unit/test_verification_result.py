@@ -1,4 +1,3 @@
-
 import pytest
 from harness.verification.result import VerificationResult
 
